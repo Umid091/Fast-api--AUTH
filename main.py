@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from users.router import router as user_router
 from users.schemas import Settings
-from fastapi_jwt_auth import AuthJWT
+from fastapi_jwt_auth2 import AuthJWT
 
 app = FastAPI()
 app.include_router(router=user_router)

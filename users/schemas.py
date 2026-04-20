@@ -37,3 +37,13 @@ class LoginSchema(BaseModel):
 
 class Settings(BaseModel):
     authjwt_secret_key: str = "aa682e49c01fd1ce4dd9b6ad55d5af936a5aca3c37ab19c24f16aff557e910bd"
+
+
+class UpdateUser(BaseModel):
+    user_name: Optional[str]
+    first_name: Optional[str] = None
+    email: Optional[str]
+    password: Optional[str]
+
+
+
