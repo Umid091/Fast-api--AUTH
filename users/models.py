@@ -19,4 +19,10 @@ class User(Base):
     def __repr__(self):
         return f"<User {self.user_name}>"
     
-    
+
+class BlacklistedToken(Base):
+    __tablename__ = "blacklisted_tokens"
+
+    id = Column(Integer, primary_key=True)
+    jti = Column(String, unique=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

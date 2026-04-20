@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 class SignUpSchema(BaseModel):
@@ -44,6 +44,14 @@ class UpdateUser(BaseModel):
     first_name: Optional[str] = None
     email: Optional[str]
     password: Optional[str]
+
+
+
+class PasswordUpdate(BaseModel):
+    old_password:str
+    new_password:str
+    confirm_password:str
+
 
 
 

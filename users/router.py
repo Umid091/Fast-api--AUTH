@@ -3,12 +3,12 @@ from http.client import responses
 from sqlalchemy import Update
 from sqlalchemy.sql.functions import current_time
 
-from users.models import User
+from users.models import User,BlacklistedToken
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from database import get_db
 from fastapi.exceptions import HTTPException
-from users.schemas import SignUpSchema as SignUp, LoginSchema as Login,UpdateUser
+from users.schemas import SignUpSchema as SignUp, LoginSchema as Login,UpdateUser,PasswordUpdate
 from werkzeug.security import generate_password_hash, check_password_hash
 from fastapi_jwt_auth2 import AuthJWT
 
@@ -75,6 +75,9 @@ def profile_view(Authorize : AuthJWT=Depends(),db: Session = Depends(get_db)):
     }
 
 
+
+
+
 @router.put('/update')
 def update(data:UpdateUser, Authorize :AuthJWT=Depends(),db: Session =Depends(get_db)):
     try:
@@ -112,6 +115,76 @@ def update(data:UpdateUser, Authorize :AuthJWT=Depends(),db: Session =Depends(ge
 
 
 
+@router.put('/update_pass')
+def update_pass(data:PasswordUpdate, Authorize :AuthJWT=Depends(),db: Session =Depends(get_db)):
+    try:
+        Authorize.jwt_required()
+        current_user = Authorize.get_jwt_subject()
+
+        db_user =db.query(User).filter(User.user_name==current_user).first()
+
+        check_user = check_password_hash(db_user.password,data.old_password)
+        if not check_user:
+            raise HTTPException(detail='Oldingi parolingiz xato',status_code=status.HTTP_400_BAD_REQUEST)
+
+        if data.old_password ==data.new_password:
+            raise HTTPException(detail="Yangi parol eski parolga teng bolmasin",status_code=status.HTTP_400_BAD_REQUEST)
+
+        if data.confirm_password != data.new_password:
+            raise HTTPException(detail="Yangi parolllar bir biriga teng emas",status_code=status.HTTP_400_BAD_REQUEST)
+
+        db_user.password= generate_password_hash(data.new_password)
+
+        db.commit()
+        db.refresh(db_user)
+
+    except Exception as e:
+        raise HTTPException(detail=f'error:{e}', status_code=status.HTTP_400_BAD_REQUEST)
+
+    return {
+        "massage":"Parolingiz muvofaqiyatli yangilandi",
+
+        "user_name": db_user.user_name,
+        "first_name": db_user.first_name,
+        "email": db_user.email
+        }
+
+
+
+@router.get('/login_refresh')
+def login_refresh(Authorize:AuthJWT=Depends()):
+    try:
+        Authorize.jwt_refresh_token_required()
+        current_user =Authorize.get_jwt_subject()
+
+        access_token =Authorize.create_access_token(subject=str(current_user))
+
+        return {
+            'status':status.HTTP_201_CREATED,
+            'access_token':access_token
+        }
+    except Exception as e:
+        raise HTTPException(detail=f"{e}",status_code=status.HTTP_400_BAD_REQUEST)
+
+
+@router.get('/logout')
+def logout(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+    try:
+        Authorize.jwt_refresh_token_required()
+        current_user = Authorize.get_jwt_subject()
+
+        jti = Authorize.get_raw_jwt()["jti"]
+
+        blacklisted = BlacklistedToken(jti=jti)
+        db.add(blacklisted)
+        db.commit()
+
+        return {
+            "status": status.HTTP_200_OK,
+            "message": f"{current_user} tizimdan chiqdi"
+        }
+    except Exception as e:
+        raise HTTPException(detail=f"{e}", status_code=status.HTTP_400_BAD_REQUEST)
 
 
 
