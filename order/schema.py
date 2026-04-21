@@ -3,4 +3,4 @@ from  typing import Optional
 
 class CardItemSchema(BaseModel):
     product_id :int
-    stock: int
+    quantity: int

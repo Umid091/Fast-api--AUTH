@@ -11,36 +11,32 @@ from order.models import Order,OrderItem,Product,Cart,Category,CartItem
 
 router=APIRouter(prefix='/order')
 
-@router.post('add_to_cart')
-def add_card(data:CardItemSchema,db:Session=Depends(get_db()),Authorize: AuthJWT=Depends())
+@router.post('/add_to_cart')
+def add_to_cart(data: CardItemSchema, db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
     try:
         Authorize.jwt_required()
-        current_user=Authorize.get_jwt_subject()
-        user =db.query(User).filter(id=current_user).first()
+        current_user = Authorize.get_jwt_subject()
 
-        if user.card:
-            card =db.query(Cart).filter(user_id=user.id).first()
+        user = db.query(User).filter(User.user_name == current_user).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User topilmadi")
 
-        else:
-            card=Cart(user =user)
-            db.add(card)
+        cart = db.query(Cart).filter(Cart.user_id == user.id).first()
+        if not cart:
+            cart = Cart(user=user)
+            db.add(cart)
             db.commit()
-            db.refresh(card)
+            db.refresh(cart)
 
-        item =Cart(user=user,product_id =data.product_id,stock =data.stock)
+        item = CartItem(cart=cart, product_id=data.product_id, quantity=data.quantity)
         db.add(item)
         db.commit()
         db.refresh(item)
 
-        data ={
-            'status':status.HTTP_201_CREATED,
-            'message':'Maxsulot qoshiladi',
-
+        return {
+            'status': status.HTTP_201_CREATED,
+            'message': 'Mahsulot qoshildi'
         }
-        return data
 
     except Exception as e:
-        raise HTTPException(detail=str(e), status_code=status.HTTP_400_BAD_REQUEST)
-
-
-
+        raise HTTPException(detail="Siz hali ro'yxatdan o'tmagansiz ", status_code=status.HTTP_400_BAD_REQUEST)
