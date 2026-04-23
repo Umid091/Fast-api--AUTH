@@ -1,6 +1,12 @@
-from pydantic import BaseModel,Field
-from  typing import Optional
+from pydantic import BaseModel
+from order.models import Order
 
 class CardItemSchema(BaseModel):
-    product_id :int
+    product_id: int
+    quantity: int = 1
+
+class UpdateCartItemSchema(BaseModel):
     quantity: int
+
+class OrderStatusSchema(BaseModel):
+    status: Order.OrderStatus
